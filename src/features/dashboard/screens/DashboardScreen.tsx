@@ -1,49 +1,98 @@
-import React from 'react';
-import { Text, StyleSheet, Button } from 'react-native';
-import { ScreenWrapper } from '@/shared/components/ScreenWrapper';
+import { RootStackParamList } from '@/navigation/RootNavigator';
 import { FabButton } from '@/shared/components/FabButton';
-import { useDashboardStore } from '../store/dashboardStore';
+import { ScreenWrapper } from '@/shared/components/ScreenWrapper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '@/navigation/RootNavigator';
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+
+import { CycleCard } from '../components/CycleCard';
+import { Greeting } from '../components/Greeting';
+import { HydrationCard } from '../components/HydrationCard';
+import { ReminderCard } from '../components/ReminderCard';
+import { SummaryCards } from '../components/SummaryCards';
+import { useDashboardData } from '../hooks/useDashboardData';
+import { LunaTheme } from '../styles/theme';
 
 export const DashboardScreen = () => {
-  const { hasSeenWelcome, setHasSeenWelcome } = useDashboardStore();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { data, loading } = useDashboardData();
+
+  const handleNewRegister = () => {
+    // Apenas se a rota NewRegister existir em sua navegação global, mantendo compatibilidade
+    // com o código antigo.
+    try {
+      navigation.navigate('NewRegister');
+    } catch (e) {
+      console.log('Rota NewRegister não encontrada');
+    }
+  };
+
+  if (loading || !data) {
+    return (
+      <ScreenWrapper style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={LunaTheme.colors.primary} />
+      </ScreenWrapper>
+    );
+  }
 
   return (
-    <ScreenWrapper style={styles.container}>
-      <Text style={styles.title}>Painel de Controle</Text>
-      <Text style={styles.subtitle}>
-        Bem-vindo! {hasSeenWelcome ? '(Você já viu as boas-vindas)' : '(Primeiro acesso)'}
-      </Text>
-      
-      {!hasSeenWelcome && (
-        <Button 
-          title="Marcar boas-vindas como vistas" 
-          onPress={() => setHasSeenWelcome(true)} 
+    <ScreenWrapper style={styles.wrapper}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <Greeting name={data.user.name} />
+
+        <CycleCard
+          phase={data.cycle.phase}
+          dayOfCycle={data.cycle.dayOfCycle}
+          daysUntilNextPeriod={data.cycle.daysUntilNextPeriod}
         />
-      )}
-      
-      <FabButton onPress={() => navigation.navigate('NewRegister')} />
+
+        <ReminderCard
+          title="Próximo lembrete"
+          description="Registrar sintomas"
+          onPress={() => { }}
+        />
+
+        <SummaryCards
+          mood={data.mood}
+          energy={data.energy}
+        />
+
+        <HydrationCard
+          current={data.hydration.current}
+          goal={data.hydration.goal}
+        />
+
+
+      </ScrollView>
+
+      {/* FAB posicionado absolutamente no canto inferior direito pelo próprio componente */}
+      <View style={styles.fabContainer}>
+        <FabButton onPress={handleNewRegister} />
+      </View>
     </ScreenWrapper>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  wrapper: {
+    paddingHorizontal: 0, // Remover padding horizontal do wrapper para controlá-lo no conteúdo
+    backgroundColor: LunaTheme.colors.background,
+  },
+  loadingContainer: {
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: LunaTheme.colors.background,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    color: '#333333',
+  scrollContent: {
+    paddingHorizontal: LunaTheme.spacing.m,
+    paddingBottom: 20,
   },
-  subtitle: {
-    fontSize: 18,
-    marginBottom: 24,
-    color: '#666666',
+  fabContainer: {
+    position: 'absolute',
+    bottom: LunaTheme.spacing.m,
+    right: LunaTheme.spacing.m,
   }
 });

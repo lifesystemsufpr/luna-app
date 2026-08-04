@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 
 interface FabButtonProps {
   onPress: () => void;
@@ -21,8 +21,8 @@ const styles = StyleSheet.create({
     right: 24,
     width: 64,
     height: 64,
-    borderRadius: 32,
-    backgroundColor: '#208AEF',
+    borderRadius: 20, // Cantos arredondados (squircle), ao invés de totalmente circular
+    backgroundColor: '#BC004F', // Cor primária do app Luna
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 4, // Para Android
@@ -34,8 +34,8 @@ const styles = StyleSheet.create({
   },
   fabText: {
     color: '#FFFFFF',
-    fontSize: 32,
-    fontWeight: 'bold',
-    lineHeight: 36, // Ajuste para centralizar visualmente
+    fontSize: 34,
+    fontWeight: '300', // Fonte mais fina para o ícone de + ficar elegante
+    lineHeight: 38, // Ajuste para centralizar visualmente
   },
 });

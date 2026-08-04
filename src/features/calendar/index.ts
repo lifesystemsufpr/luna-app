@@ -1,1 +1,2 @@
-export * from './navigation/CalendarNavigator';
+export { CalendarNavigator } from './navigation/CalendarNavigator';
+export { CalendarScreen } from './screens/CalendarScreen';
