@@ -2,8 +2,19 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ScreenWrapper } from '../../../shared/components/ScreenWrapper';
 import { LunaTheme } from '../../dashboard/styles/theme';
+import { useCycleStore } from '../../cycle/store/cycleStore';
+import { useDailyRecordStore } from '../../../shared/store/dailyRecordStore';
+import { statisticsService } from '../services/statisticsService';
 
 export const InsightsScreen = () => {
+  const periods = useCycleStore(state => state.periods);
+  const moods = useDailyRecordStore(state => state.moods);
+  const symptoms = useDailyRecordStore(state => state.symptoms);
+
+  const cycleStats = statisticsService.getCycleStats(periods);
+  const predominantMood = statisticsService.getPredominantMood(moods);
+  const frequentSymptoms = statisticsService.getFrequentSymptoms(symptoms);
+
   return (
     <ScreenWrapper style={styles.wrapper}>
       {/* HEADER */}
@@ -12,9 +23,7 @@ export const InsightsScreen = () => {
           <Text style={styles.title}>Seus Insights</Text>
           <Text style={styles.subtitle}>Dados baseados nos seus últimos 3 meses</Text>
         </View>
-        <Pressable style={styles.iconButton}>
-          <MaterialCommunityIcons name="cog-outline" size={26} color={LunaTheme.colors.primary} />
-        </Pressable>
+
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -31,7 +40,7 @@ export const InsightsScreen = () => {
             </View>
             <View style={styles.topCardBody}>
               <Text style={styles.topCardLabelLight}>Duração média</Text>
-              <Text style={styles.topCardValueLight}>28 dias</Text>
+              <Text style={styles.topCardValueLight}>{cycleStats.averageCycleLength} dias</Text>
             </View>
           </View>
 
@@ -41,8 +50,8 @@ export const InsightsScreen = () => {
               <MaterialCommunityIcons name="calendar-outline" size={20} color={LunaTheme.colors.textSecondary} />
             </View>
             <View style={styles.topCardBody}>
-              <Text style={styles.topCardLabelDark}>Último ciclo</Text>
-              <Text style={styles.topCardValueDark}>5 dias</Text>
+              <Text style={styles.topCardLabelDark}>Duração Menstruação</Text>
+              <Text style={styles.topCardValueDark}>{cycleStats.averagePeriodLength} dias</Text>
             </View>
           </View>
         </View>
@@ -51,12 +60,12 @@ export const InsightsScreen = () => {
         <View style={styles.card}>
           <View style={styles.cardHeaderRow}>
             <MaterialCommunityIcons name="emoticon-happy-outline" size={20} color="#673AB7" />
-            <Text style={styles.positiveText}>+12% estável</Text>
+            <Text style={styles.positiveText}>Principal humor</Text>
           </View>
           <Text style={styles.cardLabel}>Humor predominante</Text>
           <View style={styles.humorRow}>
-            <Text style={styles.humorEmoji}>😊</Text>
-            <Text style={styles.humorText}>Radiante</Text>
+            <Text style={styles.humorEmoji}>{predominantMood ? predominantMood.emoji : '➖'}</Text>
+            <Text style={styles.humorText}>{predominantMood ? predominantMood.text : 'Sem registros'}</Text>
           </View>
         </View>
 
@@ -92,38 +101,26 @@ export const InsightsScreen = () => {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Sintomas Recorrentes</Text>
 
-          <View style={styles.progressRow}>
-            <View style={styles.progressHeader}>
-              <Text style={styles.progressLabel}>Cãibras</Text>
-              <Text style={styles.progressValue}>12 dias/mês</Text>
+          {frequentSymptoms.length > 0 ? frequentSymptoms.map((sym, idx) => (
+            <View key={sym.key} style={styles.progressRow}>
+              <View style={styles.progressHeader}>
+                <Text style={styles.progressLabel}>{sym.label}</Text>
+                <Text style={styles.progressValue}>{sym.count} registros</Text>
+              </View>
+              <View style={styles.progressBarBg}>
+                <View style={[styles.progressBarFill, { width: `${Math.min(100, sym.count * 10)}%` }]} />
+              </View>
             </View>
-            <View style={styles.progressBarBg}>
-              <View style={[styles.progressBarFill, { width: '80%' }]} />
-            </View>
-          </View>
+          )) : (
+            <Text style={{ marginTop: 10, color: LunaTheme.colors.textSecondary }}>Nenhum sintoma registrado.</Text>
+          )}
 
-          <View style={styles.progressRow}>
-            <View style={styles.progressHeader}>
-              <Text style={styles.progressLabel}>Fadiga</Text>
-              <Text style={styles.progressValue}>8 dias/mês</Text>
-            </View>
-            <View style={styles.progressBarBg}>
-              <View style={[styles.progressBarFill, { width: '50%' }]} />
-            </View>
-          </View>
-
-          <View style={styles.progressRow}>
-            <View style={styles.progressHeader}>
-              <Text style={styles.progressLabel}>Enxaqueca</Text>
-              <Text style={styles.progressValue}>3 dias/mês</Text>
-            </View>
-            <View style={styles.progressBarBg}>
-              <View style={[styles.progressBarFill, { width: '20%' }]} />
-            </View>
-          </View>
-
-          <Pressable style={styles.outlineButton}>
-            <Text style={styles.outlineButtonText}>Ver Relatório Completo</Text>
+          <Pressable style={styles.outlineButton} onPress={() => {
+            import('../services/reportService').then(({ reportService }) => {
+              reportService.generateAndSharePDF();
+            });
+          }}>
+            <Text style={styles.outlineButtonText}>Gerar Relatório em PDF</Text>
           </Pressable>
         </View>
 

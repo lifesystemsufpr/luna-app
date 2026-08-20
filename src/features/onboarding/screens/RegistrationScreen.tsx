@@ -3,31 +3,84 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { RootStackParamList } from '../../../navigation/RootNavigator';
 import { ScreenWrapper } from '../../../shared/components/ScreenWrapper';
 import { useSessionStore } from '../../../shared/store/sessionStore';
+import { useCycleStore } from '../../cycle/store/cycleStore';
 import { LunaTheme } from '../../dashboard/styles/theme';
+import { generateId } from '../../../shared/utils/dateUtils';
+
+// Validação com Zod
+const registrationSchema = z.object({
+  name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres.'),
+  birthDate: z.string().regex(/^\d{2}\/\d{2}\/\d{4}$/, 'Data inválida (Use: dd/mm/aaaa)'),
+  lastPeriod: z.string().regex(/^\d{2}\/\d{2}\/\d{4}$/, 'Data inválida (Use: dd/mm/aaaa)'),
+});
+
+type RegistrationFormData = z.infer<typeof registrationSchema>;
+
+const applyDateMask = (value: string) => {
+  let v = value.replace(/\D/g, '');
+  if (v.length > 2) v = v.replace(/^(\d{2})(\d)/, '$1/$2');
+  if (v.length > 5) v = v.replace(/^(\d{2})\/(\d{2})(\d)/, '$1/$2/$3');
+  return v.slice(0, 10);
+};
 
 export const RegistrationScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const setHasOnboarded = useSessionStore((state) => state.setHasOnboarded);
+  const { setHasOnboarded, setUserData } = useSessionStore();
+  const addPeriod = useCycleStore(state => state.addPeriod);
+  
   const [currentStep, setCurrentStep] = useState(1);
 
-  // Form State
-  const [name, setName] = useState('');
-  const [birthDate, setBirthDate] = useState('');
-  const [lastPeriod, setLastPeriod] = useState('');
+  const { control, trigger, getValues, formState: { errors } } = useForm<RegistrationFormData>({
+    resolver: zodResolver(registrationSchema),
+    defaultValues: { name: '', birthDate: '', lastPeriod: '' },
+    mode: 'onChange'
+  });
 
-  const handleNext = () => {
-    if (currentStep < 2) {
-      setCurrentStep(currentStep + 1);
+  const handleNext = async () => {
+    if (currentStep === 1) {
+      const isValid = await trigger(['name', 'birthDate']);
+      if (isValid) {
+        setCurrentStep(2);
+      }
     } else {
-      // Finalizar cadastro
-      setHasOnboarded(true);
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Main' }],
-      });
+      const isValid = await trigger(['lastPeriod']);
+      if (isValid) {
+        const { name, birthDate, lastPeriod } = getValues();
+        
+        // Salvar nome e data de nascimento na sessão
+        setUserData(name, birthDate);
+        
+        // Cadastrar a menstruação relatada
+        const [day, month, year] = lastPeriod.split('/');
+        const startDate = `${year}-${month}-${day}`; // ISO format (YYYY-MM-DD)
+        
+        // Vamos estimar o fim como 5 dias depois
+        const start = new Date(Number(year), Number(month) - 1, Number(day));
+        start.setDate(start.getDate() + 5);
+        const endDate = start.toISOString().split('T')[0];
+
+        addPeriod({
+          id: generateId(),
+          startDate,
+          endDate,
+          flow: 'medium',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+
+        // Finalizar cadastro
+        setHasOnboarded(true);
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main' }],
+        });
+      }
     }
   };
 
@@ -74,28 +127,42 @@ export const RegistrationScreen = () => {
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Como podemos te chamar?</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Seu nome ou apelido"
-                  placeholderTextColor="#9E9E9E"
-                  value={name}
-                  onChangeText={setName}
+                <Controller
+                  control={control}
+                  name="name"
+                  render={({ field: { onChange, value } }) => (
+                    <TextInput
+                      style={[styles.input, errors.name && styles.inputError]}
+                      placeholder="Seu nome ou apelido"
+                      placeholderTextColor="#9E9E9E"
+                      value={value}
+                      onChangeText={onChange}
+                    />
+                  )}
                 />
+                {errors.name && <Text style={styles.errorText}>{errors.name.message}</Text>}
               </View>
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Qual sua data de nascimento?</Text>
-                <View style={styles.inputWithIcon}>
-                  <TextInput
-                    style={styles.inputFlex}
-                    placeholder="dd/mm/aaaa"
-                    placeholderTextColor="#9E9E9E"
-                    value={birthDate}
-                    onChangeText={setBirthDate}
-                    keyboardType="numeric"
-                  />
-                  <MaterialCommunityIcons name="calendar-month-outline" size={20} color="#333" />
-                </View>
+                <Controller
+                  control={control}
+                  name="birthDate"
+                  render={({ field: { onChange, value } }) => (
+                    <View style={[styles.inputWithIcon, errors.birthDate && styles.inputError]}>
+                      <TextInput
+                        style={styles.inputFlex}
+                        placeholder="dd/mm/aaaa"
+                        placeholderTextColor="#9E9E9E"
+                        value={value}
+                        onChangeText={(text) => onChange(applyDateMask(text))}
+                        keyboardType="numeric"
+                      />
+                      <MaterialCommunityIcons name="calendar-month-outline" size={20} color="#333" />
+                    </View>
+                  )}
+                />
+                {errors.birthDate && <Text style={styles.errorText}>{errors.birthDate.message}</Text>}
               </View>
             </View>
           )}
@@ -109,17 +176,24 @@ export const RegistrationScreen = () => {
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Quando foi o primeiro dia da sua última menstruação?</Text>
-                <View style={styles.inputWithIconPink}>
-                  <TextInput
-                    style={styles.inputFlex}
-                    placeholder="dd/mm/aaaa"
-                    placeholderTextColor="#9E9E9E"
-                    value={lastPeriod}
-                    onChangeText={setLastPeriod}
-                    keyboardType="numeric"
-                  />
-                  <MaterialCommunityIcons name="calendar-month-outline" size={20} color={LunaTheme.colors.primary} />
-                </View>
+                <Controller
+                  control={control}
+                  name="lastPeriod"
+                  render={({ field: { onChange, value } }) => (
+                    <View style={[styles.inputWithIconPink, errors.lastPeriod && styles.inputError]}>
+                      <TextInput
+                        style={styles.inputFlex}
+                        placeholder="dd/mm/aaaa"
+                        placeholderTextColor="#9E9E9E"
+                        value={value}
+                        onChangeText={(text) => onChange(applyDateMask(text))}
+                        keyboardType="numeric"
+                      />
+                      <MaterialCommunityIcons name="calendar-month-outline" size={20} color={LunaTheme.colors.primary} />
+                    </View>
+                  )}
+                />
+                {errors.lastPeriod && <Text style={styles.errorText}>{errors.lastPeriod.message}</Text>}
               </View>
 
               <View style={styles.infoBox}>
@@ -288,5 +362,14 @@ const styles = StyleSheet.create({
   },
   buttonIcon: {
     marginLeft: 8,
+  },
+  inputError: {
+    borderColor: '#D32F2F',
+  },
+  errorText: {
+    color: '#D32F2F',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
   }
 });

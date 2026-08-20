@@ -28,15 +28,7 @@ export const MedicinesScreen = () => {
           <Text style={styles.screenTitle}>Meus Remédios</Text>
           <Text style={styles.screenSubtitle}>Gerencie sua rotina de cuidados diários.</Text>
         </View>
-        <Pressable
-          onPress={() => { }}
-          style={({ pressed }) => [
-            styles.iconButton,
-            pressed && { opacity: 0.7 }
-          ]}
-        >
-          <MaterialCommunityIcons name="cog-outline" size={26} color={LunaTheme.colors.primary} />
-        </Pressable>
+
       </View>
 
       <ScrollView

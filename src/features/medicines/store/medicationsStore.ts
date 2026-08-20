@@ -1,5 +1,8 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { Medication } from '../types';
+import { zustandStorage } from '../../../shared/store/storage';
+import { generateId } from '../../../shared/utils/dateUtils';
 
 interface MedicationsState {
   medications: Medication[];
@@ -8,40 +11,25 @@ interface MedicationsState {
   removeMedication: (id: string) => void;
 }
 
-const mockMedications: Medication[] = [
-  {
-    id: '1',
-    name: 'Anticoncepcional',
-    category: 'Anticoncepcional',
-    dosage: '1 comprimido por dia',
-    frequency: 'Diário',
-    time: '08:00',
-    isActive: true,
-    startDate: '2024-01-01'
-  },
-  {
-    id: '2',
-    name: 'Suplemento',
-    category: 'Suplemento',
-    dosage: '2 gomas por dia',
-    frequency: 'Seg/Qua/Sex',
-    time: '12:00',
-    isActive: true,
-    startDate: '2024-06-01'
-  }
-];
-
-export const useMedicationsStore = create<MedicationsState>((set) => ({
-  medications: mockMedications,
-  addMedication: (medication) => set((state) => ({ 
-    medications: [...state.medications, medication] 
-  })),
-  toggleActive: (id) => set((state) => ({
-    medications: state.medications.map(m => 
-      m.id === id ? { ...m, isActive: !m.isActive } : m
-    )
-  })),
-  removeMedication: (id) => set((state) => ({
-    medications: state.medications.filter(m => m.id !== id)
-  }))
-}));
+export const useMedicationsStore = create<MedicationsState>()(
+  persist(
+    (set) => ({
+      medications: [],
+      addMedication: (medication) => set((state) => ({ 
+        medications: [...state.medications, { ...medication, id: generateId() }] 
+      })),
+      toggleActive: (id) => set((state) => ({
+        medications: state.medications.map(m => 
+          m.id === id ? { ...m, isActive: !m.isActive } : m
+        )
+      })),
+      removeMedication: (id) => set((state) => ({
+        medications: state.medications.filter(m => m.id !== id)
+      }))
+    }),
+    {
+      name: 'luna-medications-storage',
+      storage: createJSONStorage(() => zustandStorage),
+    }
+  )
+);

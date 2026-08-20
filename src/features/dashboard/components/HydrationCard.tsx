@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Modal } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LunaTheme } from '../styles/theme';
+import { useDailyRecordStore } from '../../../shared/store/dailyRecordStore';
+import { formatDate } from '../../../shared/utils/dateUtils';
 
 interface HydrationCardProps {
   current: number;
@@ -10,18 +12,21 @@ interface HydrationCardProps {
 
 export const HydrationCard: React.FC<HydrationCardProps> = ({ current, goal }) => {
   const [modalVisible, setModalVisible] = useState(false);
-  const [localCurrent, setLocalCurrent] = useState(current);
-  const [localGoal, setLocalGoal] = useState(goal);
+  
+  const addWaterStore = useDailyRecordStore(state => state.addWater);
+  const setHydrationGoal = useDailyRecordStore(state => state.setHydrationGoal);
+  
+  const today = formatDate(new Date(), 'YYYY-MM-DD');
 
-  const percentage = Math.min(Math.round((localCurrent / localGoal) * 100), 100);
+  const percentage = Math.min(Math.round((current / goal) * 100), 100) || 0;
 
   const addWater = (amountInLiters: number) => {
-    setLocalCurrent((prev) => parseFloat((prev + amountInLiters).toFixed(2)));
+    addWaterStore(today, amountInLiters);
     setModalVisible(false);
   };
 
-  const increaseGoal = () => setLocalGoal(prev => parseFloat((prev + 0.1).toFixed(2)));
-  const decreaseGoal = () => setLocalGoal(prev => prev > 0.1 ? parseFloat((prev - 0.1).toFixed(2)) : prev);
+  const increaseGoal = () => setHydrationGoal(parseFloat((goal + 0.1).toFixed(2)));
+  const decreaseGoal = () => setHydrationGoal(goal > 0.1 ? parseFloat((goal - 0.1).toFixed(2)) : goal);
 
   return (
     <>
@@ -33,11 +38,11 @@ export const HydrationCard: React.FC<HydrationCardProps> = ({ current, goal }) =
             </View>
             <View>
               <Text style={styles.title}>Hidratação</Text>
-              <Text style={styles.subtitle}>Meta: {localGoal.toString().replace('.', ',')} L</Text>
+              <Text style={styles.subtitle}>Meta: {goal.toString().replace('.', ',')} L</Text>
             </View>
           </View>
           <View style={styles.rightContent}>
-            <Text style={styles.value}>{localCurrent.toString().replace('.', ',')} L</Text>
+            <Text style={styles.value}>{current.toString().replace('.', ',')} L</Text>
             <Text style={styles.percentage}>{percentage}% da meta</Text>
           </View>
         </View>
@@ -69,7 +74,7 @@ export const HydrationCard: React.FC<HydrationCardProps> = ({ current, goal }) =
                 <Pressable style={styles.goalBtn} onPress={decreaseGoal}>
                   <MaterialCommunityIcons name="minus" size={24} color="#1E88E5" />
                 </Pressable>
-                <Text style={styles.goalText}>{localGoal.toString().replace('.', ',')} L</Text>
+                <Text style={styles.goalText}>{goal.toString().replace('.', ',')} L</Text>
                 <Pressable style={styles.goalBtn} onPress={increaseGoal}>
                   <MaterialCommunityIcons name="plus" size={24} color="#1E88E5" />
                 </Pressable>

@@ -14,6 +14,10 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { ScreenWrapper } from '../../../shared/components/ScreenWrapper';
 import { LunaTheme } from '../../dashboard/styles/theme';
+import { useDailyRecordStore } from '../../../shared/store/dailyRecordStore';
+import { useCycleStore } from '../../cycle/store/cycleStore';
+import { useCalendarStore } from '../../calendar/store/calendarStore';
+import { formatDate } from '../../../shared/utils/dateUtils';
 
 export const NewRegisterScreen = () => {
   const navigation = useNavigation();
@@ -44,6 +48,39 @@ export const NewRegisterScreen = () => {
     }
   };
 
+  const selectedDate = useCalendarStore(state => state.selectedDate);
+  const addSymptom = useDailyRecordStore(state => state.addSymptom);
+  const addMood = useDailyRecordStore(state => state.addMood);
+  const addEnergy = useDailyRecordStore(state => state.addEnergy);
+  const startPeriod = useCycleStore(state => state.startPeriod);
+  
+  const targetDateStr = selectedDate || formatDate(new Date(), 'YYYY-MM-DD');
+
+  // Format date for display
+  const displayDate = new Date(targetDateStr);
+  const dateFormatted = displayDate.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' }).toUpperCase();
+
+  const handleSave = () => {
+    if (symptoms.length > 0) {
+      // Map to english keys if needed, but we can just save the portuguese strings since it's a dynamic array
+      addSymptom(targetDateStr, symptoms as any[], observations);
+    }
+    if (mood !== null) {
+      // map 0-4 to 1-5
+      addMood(targetDateStr, (mood + 1) as any, observations);
+    }
+    if (energy) {
+      const energyMap: Record<string, number> = { 'Baixa': 2, 'Média': 3, 'Alta': 4 };
+      addEnergy(targetDateStr, energyMap[energy] || 3, observations);
+    }
+    if (flow) {
+      const flowMap: Record<string, string> = { 'Leve': 'light', 'Moderado': 'medium', 'Intenso': 'heavy' };
+      startPeriod(targetDateStr, flowMap[flow], observations);
+    }
+    
+    navigation.goBack();
+  };
+
   return (
     <ScreenWrapper style={styles.container}>
       {/* Header */}
@@ -61,7 +98,7 @@ export const NewRegisterScreen = () => {
       >
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           
-          <Text style={styles.dateSubtitle}>HOJE, 24 DE OUTUBRO</Text>
+          <Text style={styles.dateSubtitle}>{targetDateStr === formatDate(new Date()) ? `HOJE, ${dateFormatted}` : `${dateFormatted}`}</Text>
           <Text style={styles.mainTitle}>Como você está se sentindo?</Text>
 
           {/* FLUXO */}
@@ -208,7 +245,7 @@ export const NewRegisterScreen = () => {
             />
           </View>
 
-          <Pressable style={styles.saveButton} onPress={() => navigation.goBack()}>
+          <Pressable style={styles.saveButton} onPress={handleSave}>
             <Text style={styles.saveButtonText}>Salvar Registro</Text>
           </Pressable>
 

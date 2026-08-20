@@ -27,8 +27,10 @@ export const CycleCard: React.FC<CycleCardProps> = ({ phase, dayOfCycle, daysUnt
 
         <View style={styles.footer}>
           <View>
-            <Text style={styles.subtitle}>Próxima menstruação em</Text>
-            <Text style={styles.daysText}>{daysUntilNextPeriod} dias</Text>
+            <Text style={styles.subtitle}>
+              {daysUntilNextPeriod < 0 ? 'Atrasada há' : 'Próxima menstruação em'}
+            </Text>
+            <Text style={styles.daysText}>{Math.abs(daysUntilNextPeriod)} dias</Text>
           </View>
           
           <View style={styles.progressCircle}>

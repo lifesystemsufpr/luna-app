@@ -12,39 +12,48 @@ import { Legend } from '../components/Legend';
 import { SelectedDayCard } from '../components/SelectedDayCard';
 import { useCalendar } from '../hooks/useCalendar';
 import { LunaTheme } from '../../dashboard/styles/theme'; // Reutilizando a paleta base
+import { useCycleStore } from '../../cycle/store/cycleStore';
+import { differenceInDays, parseISOLocal } from '../../../shared/utils/dateUtils';
 
 export const CalendarScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { currentMonth, nextMonth, prevMonth, calendarGrid, onDayPress, selectedDate } = useCalendar();
+  const periods = useCycleStore(state => state.periods);
 
   const handleAddLog = () => {
-    try {
-      navigation.navigate('NewRegister');
-    } catch (e) {
-      console.log('Rota não encontrada');
-    }
+    navigation.navigate('NewRegister');
   };
   
   // Format the title for SelectedDayCard
-  // Just a simple split to grab the day. Real app would format nicely with date-fns or similar.
-  const selectedDayNum = selectedDate ? selectedDate.split('-')[2] : '8';
-  const selectedMonthStr = currentMonth.toLocaleString('pt-BR', { month: 'long' });
-  const formattedSelectedTitle = `${Number(selectedDayNum)} de ${selectedMonthStr.charAt(0).toUpperCase() + selectedMonthStr.slice(1)}`;
+  let formattedSelectedTitle = '';
+  let cycleDayBadge = '';
+
+  if (selectedDate) {
+    const [year, month, day] = selectedDate.split('-');
+    const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
+    const dayNum = Number(day);
+    
+    const monthStr = dateObj.toLocaleString('pt-BR', { month: 'long' });
+    formattedSelectedTitle = `${dayNum} de ${monthStr.charAt(0).toUpperCase() + monthStr.slice(1)}`;
+    
+    cycleDayBadge = 'Sem dados';
+    const targetDate = parseISOLocal(selectedDate);
+    const pastPeriods = periods.filter(p => parseISOLocal(p.startDate) <= targetDate);
+    
+    if (pastPeriods.length > 0) {
+      // periods já vem ordenado descrescente do store
+      const mostRecent = pastPeriods[0];
+      const diff = differenceInDays(selectedDate, mostRecent.startDate) + 1;
+      cycleDayBadge = `Dia ${diff} do Ciclo`;
+    }
+  }
 
   return (
     <ScreenWrapper style={styles.wrapper}>
       {/* Top Header */}
       <View style={styles.topHeader}>
         <Text style={styles.screenTitle}>Calendário</Text>
-        <Pressable 
-          onPress={() => {}} 
-          style={({ pressed }) => [
-            styles.iconButton,
-            pressed && { opacity: 0.7 }
-          ]}
-        >
-          <MaterialCommunityIcons name="cog-outline" size={26} color={LunaTheme.colors.primary} />
-        </Pressable>
+
       </View>
 
       <ScrollView 
@@ -66,7 +75,7 @@ export const CalendarScreen = () => {
         
         <SelectedDayCard 
           dateTitle={formattedSelectedTitle}
-          cycleDayBadge={`Dia ${selectedDayNum} do Ciclo`}
+          cycleDayBadge={cycleDayBadge}
           onAddLog={handleAddLog}
         />
       </ScrollView>

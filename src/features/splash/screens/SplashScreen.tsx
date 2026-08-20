@@ -10,7 +10,7 @@ export const SplashScreen = () => {
         
         {/* LOGO IMAGE */}
         <Image 
-          source={require('../../../../assets/images/image.png')} 
+          source={require('../../../../assets/images/icon.png')} 
           style={styles.logoImage} 
           resizeMode="contain"
         />

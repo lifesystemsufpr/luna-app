@@ -18,13 +18,7 @@ export const DashboardScreen = () => {
   const { data, loading } = useDashboardData();
 
   const handleNewRegister = () => {
-    // Apenas se a rota NewRegister existir em sua navegação global, mantendo compatibilidade
-    // com o código antigo.
-    try {
-      navigation.navigate('NewRegister');
-    } catch (e) {
-      console.log('Rota NewRegister não encontrada');
-    }
+    navigation.navigate('NewRegister');
   };
 
   if (loading || !data) {
@@ -52,7 +46,7 @@ export const DashboardScreen = () => {
         <ReminderCard
           title="Próximo lembrete"
           description="Registrar sintomas"
-          onPress={() => { }}
+          onPress={handleNewRegister}
         />
 
         <SummaryCards

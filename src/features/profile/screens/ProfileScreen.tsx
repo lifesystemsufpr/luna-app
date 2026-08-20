@@ -1,12 +1,29 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { ScreenWrapper } from '../../../shared/components/ScreenWrapper';
 import { LunaTheme } from '../../dashboard/styles/theme';
+import { useSessionStore } from '../../../shared/store/sessionStore';
+import { parseISOLocal } from '../../../shared/utils/dateUtils';
 
 export const ProfileScreen = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isBiometricsEnabled, setIsBiometricsEnabled] = useState(true);
+
+  const userName = useSessionStore(state => state.userName);
+  const birthDate = useSessionStore(state => state.birthDate);
+
+  const age = useMemo(() => {
+    if (!birthDate) return '--';
+    const birth = parseISOLocal(birthDate);
+    const today = new Date();
+    let computedAge = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+      computedAge--;
+    }
+    return computedAge;
+  }, [birthDate]);
 
   return (
     <ScreenWrapper style={styles.container}>
@@ -14,9 +31,9 @@ export const ProfileScreen = () => {
 
         {/* HEADER */}
         <View style={styles.header}>
-          <Text style={styles.userName}>Ana</Text>
+          <Text style={styles.userName}>{userName || 'Usuária'}</Text>
           <View style={styles.subtitleRow}>
-            <Text style={styles.userAge}>28 anos</Text>
+            <Text style={styles.userAge}>{age} anos</Text>
           </View>
         </View>
 
@@ -37,31 +54,39 @@ export const ProfileScreen = () => {
           />
         </View>
 
-        {/* NOTIFICAÇÕES */}
-        <Pressable style={styles.card}>
-          <View style={styles.cardLeft}>
-            <MaterialCommunityIcons name="bell-outline" size={24} color="#795548" style={styles.cardIcon} />
-            <View>
-              <Text style={styles.cardTitle}>Notificações</Text>
-              <Text style={styles.cardSubtitle}>Lembretes & Alertas</Text>
-            </View>
-          </View>
-          <MaterialCommunityIcons name="chevron-right" size={24} color={LunaTheme.colors.textSecondary} />
-        </Pressable>
 
-        {/* RELATÓRIO PDF */}
-        <Pressable style={styles.card}>
-          <View style={styles.cardLeft}>
-            <View style={[styles.roundedIconBg, { backgroundColor: '#FFCDD2' }]}>
-              <MaterialCommunityIcons name="file-pdf-box" size={20} color="#D32F2F" />
+
+
+
+        {/* CONFIGURAÇÕES DO APP */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Aplicativo</Text>
+          
+          <Pressable style={styles.menuItem} onPress={() => {
+            import('react-native').then(({ Alert }) => {
+              Alert.alert('Apagar todos os dados', 'Isso excluirá todos os seus registros localmente. Não pode ser desfeito.', [
+                { text: 'Cancelar', style: 'cancel' },
+                { text: 'Apagar', style: 'destructive', onPress: () => {
+                  import('../../../shared/store/dailyRecordStore').then(({ useDailyRecordStore }) => {
+                    useDailyRecordStore.getState().clearAllRecords();
+                  });
+                  import('../../cycle/store/cycleStore').then(({ useCycleStore }) => {
+                    useCycleStore.setState({ periods: [] });
+                  });
+                  import('../../medicines/store/medicationsStore').then(({ useMedicationsStore }) => {
+                    useMedicationsStore.setState({ medications: [] });
+                  });
+                  Alert.alert('Dados apagados', 'Seus registros foram zerados.');
+                }}
+              ]);
+            });
+          }}>
+            <View style={styles.menuItemLeft}>
+              <MaterialCommunityIcons name="delete-outline" size={24} color="#D32F2F" />
+              <Text style={[styles.menuItemText, { color: '#D32F2F' }]}>Apagar todos os dados</Text>
             </View>
-            <View>
-              <Text style={styles.cardTitle}>Relatório PDF</Text>
-              <Text style={styles.cardSubtitle}>Exportar histórico</Text>
-            </View>
-          </View>
-          <MaterialCommunityIcons name="download" size={24} color="#795548" />
-        </Pressable>
+          </Pressable>
+        </View>
 
         {/* GROUPED MENU (Sobre / Sair) */}
         <View style={styles.groupedCard}>
@@ -201,5 +226,34 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#9E9E9E',
     marginBottom: 4,
+  },
+  section: {
+    marginBottom: LunaTheme.spacing.l,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: LunaTheme.colors.textSecondary,
+    marginBottom: LunaTheme.spacing.s,
+    paddingHorizontal: 4,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F5F5F5',
+    borderRadius: LunaTheme.radii.large,
+    padding: LunaTheme.spacing.m,
+    marginBottom: LunaTheme.spacing.s,
+  },
+  menuItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  menuItemText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: LunaTheme.colors.textPrimary,
+    marginLeft: 12,
   }
 });

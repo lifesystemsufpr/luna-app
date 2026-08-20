@@ -16,15 +16,7 @@ export const Header: React.FC<HeaderProps> = ({ onSettingsPress }) => {
         </View>
         <Text style={styles.appName}>Luna</Text>
       </View>
-      <Pressable 
-        onPress={onSettingsPress} 
-        style={({ pressed }) => [
-          styles.iconButton,
-          pressed && { opacity: 0.7 }
-        ]}
-      >
-        <MaterialCommunityIcons name="cog-outline" size={26} color={LunaTheme.colors.primary} />
-      </Pressable>
+
     </View>
   );
 };
