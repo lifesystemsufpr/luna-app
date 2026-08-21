@@ -41,8 +41,9 @@ export const useCalendar = () => {
       let currentEstimate = new Date(stats.nextPeriodEstimate);
       let safetyCount = 0;
       
-      // Projetar as previsões até passar do mês que está sendo visualizado
-      while (currentEstimate <= lastDayOfMonth && safetyCount < 48) {
+      // Projetar as previsões até passar do mês que está sendo visualizado (com uma margem de segurança para pegar períodos férteis do mês seguinte)
+      const projectionLimit = addDays(lastDayOfMonth, 30);
+      while (currentEstimate <= projectionLimit && safetyCount < 48) {
         // Previsão de menstruação
         for (let i = 0; i < stats.averagePeriodLength; i++) {
           const d = addDays(currentEstimate, i);

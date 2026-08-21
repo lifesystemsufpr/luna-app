@@ -15,7 +15,13 @@ export const ProfileScreen = () => {
 
   const age = useMemo(() => {
     if (!birthDate) return '--';
-    const birth = parseISOLocal(birthDate);
+    let birth: Date;
+    if (birthDate.includes('/')) {
+      const [day, month, year] = birthDate.split('/');
+      birth = new Date(Number(year), Number(month) - 1, Number(day));
+    } else {
+      birth = parseISOLocal(birthDate);
+    }
     const today = new Date();
     let computedAge = today.getFullYear() - birth.getFullYear();
     const m = today.getMonth() - birth.getMonth();

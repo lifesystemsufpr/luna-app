@@ -34,7 +34,7 @@ export const RootNavigator = () => {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Onboarding">
+      <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={hasOnboarded ? 'Main' : 'Onboarding'}>
         <Stack.Screen name="Onboarding" component={OnboardingNavigator} />
         <Stack.Screen name="Main" component={MainTabNavigator} />
         {/* Modals acessíveis por toda a aplicação */}

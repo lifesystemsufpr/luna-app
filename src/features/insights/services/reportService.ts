@@ -1,5 +1,6 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system/legacy';
 import { useCycleStore } from '../../cycle/store/cycleStore';
 import { useDailyRecordStore } from '../../../shared/store/dailyRecordStore';
 import { statisticsService } from './statisticsService';
@@ -63,7 +64,18 @@ export const reportService = {
       `;
 
       const { uri } = await Print.printToFileAsync({ html });
-      await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
+      
+      const newUri = `${FileSystem.documentDirectory}Relatorio-Luna.pdf`;
+      await FileSystem.copyAsync({
+        from: uri,
+        to: newUri
+      });
+
+      await Sharing.shareAsync(newUri, { 
+        UTI: 'com.adobe.pdf', 
+        mimeType: 'application/pdf',
+        dialogTitle: 'Compartilhar Relatório Luna'
+      });
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
     }

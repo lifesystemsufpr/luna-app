@@ -1,9 +1,9 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ScreenWrapper } from '../../../shared/components/ScreenWrapper';
-import { LunaTheme } from '../../dashboard/styles/theme';
-import { useCycleStore } from '../../cycle/store/cycleStore';
 import { useDailyRecordStore } from '../../../shared/store/dailyRecordStore';
+import { useCycleStore } from '../../cycle/store/cycleStore';
+import { LunaTheme } from '../../dashboard/styles/theme';
 import { statisticsService } from '../services/statisticsService';
 
 export const InsightsScreen = () => {
@@ -115,13 +115,6 @@ export const InsightsScreen = () => {
             <Text style={{ marginTop: 10, color: LunaTheme.colors.textSecondary }}>Nenhum sintoma registrado.</Text>
           )}
 
-          <Pressable style={styles.outlineButton} onPress={() => {
-            import('../services/reportService').then(({ reportService }) => {
-              reportService.generateAndSharePDF();
-            });
-          }}>
-            <Text style={styles.outlineButtonText}>Gerar Relatório em PDF</Text>
-          </Pressable>
         </View>
 
         {/* QUALIDADE DO SONO */}
@@ -154,19 +147,7 @@ export const InsightsScreen = () => {
         </View>
 
         {/* DICA PERSONALIZADA */}
-        <View style={styles.tipCard}>
-          <View style={styles.tipHeader}>
-            <Text style={styles.tipTitle}>Dica Personalizada</Text>
-          </View>
-          <View style={styles.tipBody}>
-            <View style={styles.tipIconBox}>
-              <MaterialCommunityIcons name="lightbulb-outline" size={24} color="#FFF" />
-            </View>
-            <Text style={styles.tipText}>
-              Notamos que seu sono melhora quando você pratica yoga à noite. Que tal uma sessão de 10 min hoje?
-            </Text>
-          </View>
-        </View>
+
 
       </ScrollView>
 
